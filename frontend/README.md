@@ -8,11 +8,13 @@ Interface web em React, TypeScript e Vite para consumir a API ASP.NET Core do pr
 - Listagem paginada por `GET /api/archives/`.
 - Busca local por nome de arquivo.
 - Exibição de tamanho, data de envio e expiração.
-- Abertura do conteúdo por `GET /api/archives/{id}/content`.
+- Abertura do conteúdo por `GET /api/archives/{id}/content`, servido diretamente pela API. PDFs, texto e imagens comuns abrem no navegador; outros formatos são baixados.
 
 ## Requisitos
 - Node.js 20 ou superior (recomendado).
 - API ASP.NET Core em execução e conectada ao Google Cloud Storage.
+
+A API acessa o bucket privado com as credenciais do Google Cloud. Não é necessário configurar CDN, URL pública do bucket ou chave de assinatura. Documentos expirados ou inexistentes retornam 404.
 
 ## Como executar
 
@@ -37,10 +39,10 @@ Linux/macOS:
 cp .env.example .env
 ```
 
-Edite `.env` e informe a URL base da API, sem barra no final. Use a porta HTTPS exibida quando a API ASP.NET Core iniciar:
+Mantenha `.env` com a origem atual. O proxy do Vite encaminha `/api` para `http://localhost:5254`, a porta do perfil HTTP da API:
 
 ```env
-VITE_API_BASE_URL=https://localhost:7001
+VITE_API_BASE_URL=/
 ```
 
 Inicie o frontend:
@@ -59,7 +61,7 @@ npm run build
 
 Os arquivos gerados ficam em `dist/`.
 
-## Integração e CORS
-O navegador precisa conseguir acessar a API a partir da origem do Vite. Se aparecer erro de CORS, configure uma política CORS na API ASP.NET Core permitindo a origem local do Vite (normalmente `http://localhost:5173`). Não habilite acesso irrestrito em produção.
+## Integração
+Inicie a API com `dotnet run --project VidaPlenaArchives.WebApi --launch-profile http` na raiz, configurando `GoogleStorage__BucketName` e as credenciais do Google Cloud no ambiente. O `.env` da raiz é lido pelo Docker Compose; `dotnet run` não o carrega automaticamente. Se usar outra porta HTTP, ajuste o destino do proxy em `vite.config.ts`. Tanto no Vite quanto no Docker, o navegador usa a mesma origem e não precisa de configuração CORS.
 
 A API aceita arquivos de até 20 MB e exige os campos multipart `file` e `days` no envio.

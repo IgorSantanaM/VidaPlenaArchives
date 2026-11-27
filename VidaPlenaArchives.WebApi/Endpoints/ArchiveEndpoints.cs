@@ -52,7 +52,7 @@ public static class ArchiveEndpoints
     }
 
     private static async Task<IResult> HandleListAsync(IArchiveStorage storage, HttpResponse response,
-        int pageSize, string? pageToken, CancellationToken cancellationToken)
+        CancellationToken cancellationToken, int pageSize = 20, string? pageToken = null)
     {
         response.Headers.CacheControl = "no-store";
         if (pageSize is < 1 or > 100)
@@ -75,8 +75,19 @@ public static class ArchiveEndpoints
         HttpResponse response, CancellationToken cancellationToken)
     {
         response.Headers.CacheControl = "no-store";
-        var document = await storage.GetAsync(id, cancellationToken);
-        return document is null ? Results.NotFound() : Results.Redirect(document.Url);
+        var content = await storage.DownloadAsync(id, cancellationToken);
+        if (content is null)
+            return Results.NotFound();
+
+        // Only preview passive formats on the application's origin.
+        var mediaType = content.Document.ContentType.Split(';', 2)[0].Trim().ToLowerInvariant();
+        var inline = mediaType is "application/pdf" or "text/plain" or "image/png"
+            or "image/jpeg" or "image/gif" or "image/webp";
+        var disposition = new System.Net.Http.Headers.ContentDispositionHeaderValue(
+            inline ? "inline" : "attachment") { FileNameStar = content.Document.FileName };
+        response.Headers.ContentDisposition = disposition.ToString();
+        response.Headers.XContentTypeOptions = "nosniff";
+        return Results.Stream(content.Content, content.Document.ContentType, enableRangeProcessing: true);
     }
     #endregion
 }

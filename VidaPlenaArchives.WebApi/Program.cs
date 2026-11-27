@@ -9,9 +9,6 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOptions<GoogleStorageOptions>()
     .BindConfiguration(GoogleStorageOptions.SectionName)
     .Validate(options => !string.IsNullOrWhiteSpace(options.BucketName), "GoogleStorage:BucketName is required.")
-    .Validate(options => options.HasValidCdnUrl(), "GoogleStorage:CdnBaseUrl must be an HTTPS origin without a port, path, query or fragment.")
-    .Validate(options => options.HasValidSigningKey(), "GoogleStorage requires a CDN key name and a base64url-encoded 16-byte signing key.")
-    .Validate(options => options.SignedUrlMinutes is >= 1 and <= 60, "SignedUrlMinutes must be between 1 and 60.")
     .ValidateOnStart();
 
 builder.Services.AddSingleton(_ => StorageClient.Create());
@@ -32,3 +29,5 @@ app.UseHttpsRedirection();
 app.MapArchiveEndpoints();
 
 app.Run();
+
+public partial class Program;

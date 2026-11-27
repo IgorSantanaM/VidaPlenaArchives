@@ -1,8 +1,6 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Security.Cryptography;
-using System.Text;
 using Google;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.Options;
@@ -57,6 +55,51 @@ public sealed class ArchiveStorage(StorageClient client, IOptions<GoogleStorageO
         }
     }
 
+    public async Task<ArchiveContent?> DownloadAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var content = new MemoryStream();
+        try
+        {
+            var stored = await client.GetObjectAsync(settings.BucketName, $"{Prefix}{id:D}",
+                cancellationToken: cancellationToken);
+            var document = ToDocument(stored, clock.GetUtcNow());
+            if (document is null)
+            {
+                content.Dispose();
+                return null;
+            }
+
+            // Buffer before sending headers so missing/changed objects return 404.
+            // The seekable stream also supports browser range requests for PDFs.
+            await client.DownloadObjectAsync(settings.BucketName, stored.Name, content,
+                new DownloadObjectOptions
+                {
+                    IfGenerationMatch = stored.Generation,
+                    IfMetagenerationMatch = stored.Metageneration
+                }, cancellationToken);
+
+            if (document.ExpiresAt <= clock.GetUtcNow())
+            {
+                content.Dispose();
+                return null;
+            }
+
+            content.Position = 0;
+            return new ArchiveContent(document, content);
+        }
+        catch (GoogleApiException exception) when (exception.HttpStatusCode is
+            HttpStatusCode.NotFound or HttpStatusCode.PreconditionFailed)
+        {
+            content.Dispose();
+            return null;
+        }
+        catch
+        {
+            content.Dispose();
+            throw;
+        }
+    }
+
     public async Task<ArchivePage> ListAsync(int pageSize, string? pageToken, CancellationToken cancellationToken)
     {
         var page = await client.ListObjectsAsync(settings.BucketName, Prefix,
@@ -81,15 +124,9 @@ public sealed class ArchiveStorage(StorageClient client, IOptions<GoogleStorageO
                 DateTimeStyles.RoundtripKind, out var uploadedAt))
             return null;
 
-        var urlExpiresAt = DateTimeOffset.FromUnixTimeSeconds(Math.Min(
-            now.AddMinutes(settings.SignedUrlMinutes).ToUnixTimeSeconds(), expiresAt.ToUnixTimeSeconds()));
-        var cdnOrigin = new Uri(settings.CdnBaseUrl).GetComponents(UriComponents.SchemeAndServer, UriFormat.UriEscaped);
-        var url = $"{cdnOrigin}/{document.Name}"
-            + $"?Expires={urlExpiresAt.ToUnixTimeSeconds()}&KeyName={settings.CdnKeyName}";
-        var signature = HMACSHA1.HashData(settings.DecodeSigningKey(), Encoding.UTF8.GetBytes(url));
-        var encodedSignature = Convert.ToBase64String(signature).Replace('+', '-').Replace('/', '_');
-
-        return new ArchiveDocument(id, fileName, document.ContentType, document.Size ?? 0,
-            uploadedAt, expiresAt, $"{url}&Signature={encodedSignature}", urlExpiresAt);
+        var contentType = MediaTypeHeaderValue.TryParse(document.ContentType, out var parsedType)
+            ? parsedType.ToString() : "application/octet-stream";
+        return new ArchiveDocument(id, fileName, contentType, document.Size ?? 0,
+            uploadedAt, expiresAt, $"/api/archives/{id:D}/content");
     }
 }

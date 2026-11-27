@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="VidaPlenaArchives.WebApi/VidaPlenaArchives.WebApi.csproj" />
+  <Project Path="VidaPlenaArchives.WebApi.Tests/VidaPlenaArchives.WebApi.Tests.csproj" />
 </Solution>

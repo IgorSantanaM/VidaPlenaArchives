@@ -308,7 +308,7 @@ const pageSize = 10;
     try {
       const result = await apiRequest<
         ArchiveDocument[] | ArchivePage
-      >("/api/archives/");
+      >("/api/archives/?pageSize=100");
 
       const list = Array.isArray(result)
         ? result
