@@ -15,6 +15,9 @@ Interface web em React, TypeScript e Vite para consumir a API ASP.NET Core do pr
 - API ASP.NET Core em execução e conectada ao Google Cloud Storage.
 
 ## Como executar
+
+Para executar o frontend e a API juntos com Docker Compose, siga as instruções no [README da raiz](../README.md#run-both-projects-with-docker-compose). O container usa Nginx para servir a interface e encaminhar `/api/` para a API. O valor `VITE_API_BASE_URL=/` seleciona a origem atual do navegador e já é definido no Dockerfile.
+
 No terminal, entre nesta pasta:
 
 ```bash

@@ -1,0 +1,31 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: VidaPlenaArchives.WebApi/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: "8080"
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/google_application_credentials
+      GoogleStorage__BucketName: ${GOOGLE_STORAGE_BUCKET_NAME:?Set GOOGLE_STORAGE_BUCKET_NAME in .env}
+      GoogleStorage__CdnBaseUrl: ${GOOGLE_STORAGE_CDN_BASE_URL:?Set GOOGLE_STORAGE_CDN_BASE_URL in .env}
+      GoogleStorage__CdnKeyName: ${GOOGLE_STORAGE_CDN_KEY_NAME:-documents-key}
+      GoogleStorage__CdnSigningKey: ${GOOGLE_STORAGE_CDN_SIGNING_KEY:?Set GOOGLE_STORAGE_CDN_SIGNING_KEY in .env}
+      GoogleStorage__SignedUrlMinutes: ${GOOGLE_STORAGE_SIGNED_URL_MINUTES:-15}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    secrets:
+      - google_application_credentials
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      - api
+
+secrets:
+  google_application_credentials:
+    file: ${GOOGLE_APPLICATION_CREDENTIALS:?Set GOOGLE_APPLICATION_CREDENTIALS to a local Google credentials JSON file in .env}

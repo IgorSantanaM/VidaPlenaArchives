@@ -21,6 +21,6 @@ RUN dotnet publish "./VidaPlenaArchives.WebApi.csproj" -c $BUILD_CONFIGURATION -
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish --chown app:app /app/publish .
+COPY --from=publish --chown=app:app /app/publish .
 USER app
 ENTRYPOINT ["dotnet", "VidaPlenaArchives.WebApi.dll"]

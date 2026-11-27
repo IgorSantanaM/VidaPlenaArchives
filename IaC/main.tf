@@ -15,6 +15,7 @@ provider "google" {
 variable "project_id" {
     type = string
     description = "id do projeto GCP do laboratório"
+    default = "qwiklabs-gcp-04-73f2b1e1a736"
 }
 
 resource "google_storage_bucket" "exames_hospital_vida_plena" {

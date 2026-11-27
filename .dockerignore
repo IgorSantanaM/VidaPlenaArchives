@@ -1,6 +1,11 @@
 **/.classpath
 **/.dockerignore
 **/.env
+**/.env.*
+**/.terraform
+**/secrets
+**/dist
+**/*.tsbuildinfo
 **/.git
 **/.gitignore
 **/.project
