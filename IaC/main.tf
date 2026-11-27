@@ -10,24 +10,17 @@ terraform {
 provider "google" {
     project = var.project_id
     region = "us-central1"
+    zone = "us-central1-a"
 }
-
-variable "project_id" {
-    type = string
-    description = "id do projeto GCP do laboratório"
-    default = "qwiklabs-gcp-04-73f2b1e1a736"
-}
-
-resource "google_storage_bucket" "exames_hospital_vida_plena" {
-    name     = "hospital-vida-plena-exames-${var.project_id}"
-    project = var.project_id
-    location = "us-central1"
-
-    storage_class = "STANDARD"
-
-    force_destroy = true
-
-    uniform_bucket_level_access =  true
+# ALTERAR
+resource "google_storage_bucket" "qwiklabs-gcp-04-31507d7595b0-us" {
+    name                        = "qwiklabs-gcp-04-31507d7595b0-us"
+  project                     = "qwiklabs-gcp-04-31507d7595b0"
+  location                    = "US"
+  storage_class               = "STANDARD"
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  force_destroy               = true
 
     versioning {
         enabled = true
